@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정한옥 · 디지털 명함</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --navy: #1f2d59; --accent: #2e74d6; --ink: #25304f; --muted: #6b7592; --line: #e6ecf5; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; color: var(--ink);
+    background: linear-gradient(160deg, #eef2f8 0%, #e2e9f3 100%);
+    -webkit-text-size-adjust: 100%;
+  }
+  .card {
+    width: min(95vw, 720px); background: #fff; border-radius: 22px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 60px rgba(31,45,89,.18);
+  }
+  .info { flex: 1.25; padding: clamp(28px, 5vw, 44px); display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: clamp(18px, 4vw, 28px); }
+  .mono {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: var(--navy); color: #fff; font-weight: 800; font-size: 1.3rem;
+    display: flex; align-items: center; justify-content: center; letter-spacing: -1px;
+  }
+  .brand .org { font-size: clamp(.82rem, 3.4vw, .95rem); font-weight: 800; color: var(--navy); letter-spacing: .2px; }
+  .name { font-size: clamp(2.1rem, 8vw, 2.7rem); font-weight: 800; letter-spacing: 4px; color: var(--navy); line-height: 1.1; }
+  .role { font-size: clamp(1rem, 4.2vw, 1.2rem); font-weight: 700; color: #33406a; margin-top: 8px; }
+  .tagline { font-size: clamp(.85rem, 3.5vw, .98rem); font-weight: 700; color: var(--accent); margin-top: 12px; word-break: keep-all; line-height: 1.5; }
+  .secondary { font-size: clamp(.74rem, 3vw, .83rem); font-weight: 600; color: var(--muted); margin-top: 6px; }
+  .divider { height: 1px; background: var(--line); margin: clamp(18px, 4vw, 24px) 0; }
+  .contacts { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .contacts li, .contacts a {
+    display: flex; align-items: center; gap: 11px;
+    font-size: clamp(.86rem, 3.5vw, .98rem); font-weight: 600; color: #33406a; text-decoration: none; word-break: break-all;
+  }
+  .contacts a:active { color: var(--accent); }
+  .contacts .ic { font-size: 1.05em; width: 1.5em; text-align: center; flex-shrink: 0; color: var(--accent); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: clamp(20px, 4vw, 26px); }
+  .btn {
+    font-family: inherit; font-size: clamp(.86rem, 3.6vw, .96rem); font-weight: 800; cursor: pointer;
+    border: none; border-radius: 11px; padding: .62em 1.15em; color: #fff; text-decoration: none;
+    background: var(--navy); transition: opacity .12s;
+  }
+  .btn:active { opacity: .85; }
+  .btn2 { background: #eef3fb; color: var(--navy); }
+  .toast {
+    position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%);
+    background: rgba(20,30,55,.93); color: #fff; font-weight: 700; z-index: 30;
+    padding: .7em 1.2em; border-radius: 999px; font-size: clamp(.85rem, 3.5vw, 1rem);
+    max-width: 90vw; text-align: center; pointer-events: none;
+    animation: toastIn .3s ease, toastOut .4s ease 2.4s forwards;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes toastOut { to { opacity: 0; } }
+  .biz { margin-top: 18px; }
+  .biz summary { cursor: pointer; font-weight: 700; color: var(--accent); font-size: clamp(.78rem, 3.2vw, .88rem); list-style: none; }
+  .biz summary::-webkit-details-marker { display: none; }
+  .biz ul { list-style: none; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .biz li { font-size: clamp(.68rem, 2.9vw, .77rem); font-weight: 700; color: #33406a; background: #eef3fb; border-radius: 999px; padding: 4px 10px; }
+
+  .qrside {
+    padding: clamp(26px, 5vw, 40px); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: #f5f8fd; border-top: 1px solid var(--line);
+  }
+  #qr {
+    width: clamp(180px, 56vw, 220px); aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border-radius: 14px; padding: 10px;
+    box-shadow: 0 0 0 1px var(--line), 0 8px 20px rgba(31,45,89,.08);
+  }
+  #qr img, #qr canvas { width: 100% !important; height: 100% !important; }
+  .qr-fail { font-size: .8rem; color: #8a93b2; line-height: 1.5; font-weight: 600; text-align: center; }
+  .qr-cap { font-size: clamp(.78rem, 3.2vw, .9rem); font-weight: 700; color: var(--navy); text-align: center; }
+  .qr-cap span { color: var(--accent); }
+
+  @media (min-width: 600px) {
+    .card { flex-direction: row; }
+    .info { padding: clamp(36px, 4vw, 48px); }
+    .qrside { border-top: none; border-left: 1px solid var(--line); min-width: 280px; }
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="info">
+      <div class="brand">
+        <div class="mono">정</div>
+        <div class="org">(주)드로니아</div>
+      </div>
+      <h1 class="name">정한옥</h1>
+      <div class="role">(주)드로니아 대표</div>
+      <div class="tagline">드론 전문 기업 · 고용노동부 인증 사회적기업</div>
+      <div class="secondary">(사)대한드론농구협회 협회장</div>
+
+      <div class="divider"></div>
+
+      <ul class="contacts">
+        <li><a href="tel:01093370911"><span class="ic">📱</span> 010-9337-0911</a></li>
+        <li><a href="tel:0415310912"><span class="ic">☎️</span> 041-531-0912</a></li>
+        <li><span class="ic">📠</span> 0504-337-0911 (팩스)</li>
+        <li><a href="mailto:dronia2019@naver.com"><span class="ic">✉️</span> dronia2019@naver.com</a></li>
+        <li><a href="https://www.dronedu.kr" target="_blank" rel="noopener"><span class="ic">🌐</span> www.dronedu.kr</a></li>
+        <li><span class="ic">📍</span> (31538) 충남 아산시 순천향로 22-12 앙뜨레프레너관 E407호</li>
+      </ul>
+
+      <div class="actions">
+        <button id="saveVcf" class="btn">📇 연락처 저장</button>
+        <button id="saveCard" class="btn">🖼️ 명함 저장</button>
+        <a class="btn btn2" href="tel:01093370911">📞 전화</a>
+        <a class="btn btn2" href="mailto:dronia2019@naver.com">✉️ 메일</a>
+      </div>
+
+      <details class="biz">
+        <summary>주요 사업 보기 ▾</summary>
+        <ul>
+          <li>드론 국가자격증 교육</li>
+          <li>드론농구 지도사·심판 양성</li>
+          <li>드론스포츠·활용 교육</li>
+          <li>교육훈련 장비 제조</li>
+          <li>드론 행사 운영</li>
+          <li>드론스포츠 R&amp;D·콘텐츠</li>
+          <li>AI·바이브코딩 교육</li>
+        </ul>
+      </details>
+    </div>
+
+    <div class="qrside">
+      <div id="qr"></div>
+      <div class="qr-cap">📷 폰 카메라로 스캔 → <span>연락처 저장</span></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@master/qrcode.min.js"></script>
+  <script>
+    const vcard = [
+      'BEGIN:VCARD', 'VERSION:3.0',
+      'N:정한옥;;;', 'FN:정한옥',
+      'ORG:(주)드로니아', 'TITLE:대표',
+      'TEL;TYPE=CELL:010-9337-0911',
+      'TEL;TYPE=WORK:041-531-0912',
+      'TEL;TYPE=FAX:0504-337-0911',
+      'EMAIL:dronia2019@naver.com',
+      'URL:https://www.dronedu.kr',
+      'ADR;TYPE=WORK:;;충남 아산시 순천향로 22-12 앙뜨레프레너관 E407호;;;31538;대한민국',
+      'NOTE:드론 전문 기업 · 고용노동부 인증 사회적기업 · AI·바이브코딩 교육 · (사)대한드론농구협회 협회장',
+      'END:VCARD'
+    ].join('\r\n');
+    const qrBox = document.getElementById('qr');
+
+    function qrFromImage() {
+      qrBox.innerHTML = '';
+      const img = document.createElement('img');
+      img.alt = '연락처 QR';
+      img.referrerPolicy = 'no-referrer';
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&ecc=L&data=' + encodeURIComponent(vcard);
+      img.onerror = function () {
+        qrBox.innerHTML = '<p class="qr-fail">인터넷이 막혀 QR을 못 그렸어요.<br>‘연락처 저장’으로 받은 vCard를 무료 QR 생성기(예: qr-code-generator.com)에 올려 PNG로 만든 뒤, 이 자리에 그림으로 넣으면 됩니다.</p>';
+      };
+      qrBox.appendChild(img);
+    }
+
+    try {
+      if (window.QRCode) {
+        new QRCode(qrBox, { text: vcard, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+        setTimeout(function () { if (!qrBox.querySelector('img, canvas')) qrFromImage(); }, 250);
+      } else {
+        qrFromImage();
+      }
+    } catch (e) {
+      qrFromImage();
+    }
+
+    // ── 명함을 'PNG 이미지'로 저장 (canvas로 직접 그림) ──
+    function toast(msg) {
+      const d = document.createElement('div');
+      d.className = 'toast'; d.textContent = msg;
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 2900);
+    }
+    function rr(x, px, py, w, h, r) { x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r); x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath(); }
+
+    // QR을 export용으로 새로 생성(같은 출처 canvas → 이미지 합성 시 안전)
+    function makeQrCanvas(size, cb) {
+      if (!window.QRCode) { cb(qrBox.querySelector('canvas') || null); return; }
+      const tmp = document.createElement('div');
+      try { new QRCode(tmp, { text: vcard, width: size, height: size, correctLevel: QRCode.CorrectLevel.L }); } catch (e) {}
+      setTimeout(() => cb(tmp.querySelector('canvas') || null), 40);
+    }
+
+    function drawCard(qrCanvas) {
+      const W = 1080, H = 1500, B = 'bold ';
+      const NAVY = '#1f2d59', ACC = '#2e74d6', INK = '#33406a', MUT = '#6b7592';
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const x = cv.getContext('2d');
+      x.fillStyle = '#e8eef7'; x.fillRect(0, 0, W, H);
+      const m = 50; rr(x, m, m, W - 2*m, H - 2*m, 44); x.fillStyle = '#fff'; x.fill();
+      x.save(); rr(x, m, m, W - 2*m, H - 2*m, 44); x.clip(); x.fillStyle = NAVY; x.fillRect(m, m, W - 2*m, 12); x.restore();
+
+      const p = 95, lx = m + p; let y = m + 116;
+      x.beginPath(); x.arc(lx + 40, y, 40, 0, Math.PI * 2); x.fillStyle = NAVY; x.fill();
+      x.fillStyle = '#fff'; x.font = B + '48px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('정', lx + 40, y + 3);
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+      x.fillStyle = NAVY; x.font = B + '34px sans-serif'; x.fillText('(주)드로니아', lx + 98, y + 12);
+
+      y += 132; x.fillStyle = NAVY; x.font = B + '96px sans-serif'; x.fillText('정한옥', lx, y);
+      y += 64;  x.fillStyle = INK;  x.font = B + '42px sans-serif'; x.fillText('(주)드로니아 대표', lx, y);
+      y += 56;  x.fillStyle = ACC;  x.font = B + '33px sans-serif'; x.fillText('드론 전문 기업 · 고용노동부 인증 사회적기업', lx, y);
+      y += 44;  x.fillStyle = MUT;  x.font = '28px sans-serif';     x.fillText('(사)대한드론농구협회 협회장', lx, y);
+
+      y += 50; x.strokeStyle = '#e6ecf5'; x.lineWidth = 2; x.beginPath(); x.moveTo(lx, y); x.lineTo(W - m - p, y); x.stroke();
+      y += 56; x.fillStyle = INK; x.font = '32px sans-serif';
+      ['📱  010-9337-0911', '☎️  041-531-0912', '📠  0504-337-0911 (팩스)', '✉️  dronia2019@naver.com', '🌐  www.dronedu.kr'].forEach(t => { x.fillText(t, lx, y); y += 52; });
+      x.fillText('📍  (31538) 충남 아산시 순천향로 22-12', lx, y); y += 46;
+      x.fillText('       앙뜨레프레너관 E407호', lx, y); y += 58;
+
+      const qs = 356, qx = (W - qs) / 2;
+      x.fillStyle = '#fff'; rr(x, qx - 16, y - 16, qs + 32, qs + 32, 20); x.fill(); x.strokeStyle = '#e6ecf5'; x.lineWidth = 2; x.stroke();
+      if (qrCanvas) { x.drawImage(qrCanvas, qx, y, qs, qs); }
+      else { x.fillStyle = MUT; x.font = '26px sans-serif'; x.textAlign = 'center'; x.fillText('QR은 인터넷 연결 후 저장돼요', W / 2, y + qs / 2); x.textAlign = 'left'; }
+      y += qs + 52; x.fillStyle = NAVY; x.font = B + '30px sans-serif'; x.textAlign = 'center'; x.fillText('📷 스캔하면 연락처 저장', W / 2, y); x.textAlign = 'left';
+      return cv;
+    }
+
+    document.getElementById('saveCard').addEventListener('click', () => {
+      makeQrCanvas(356, (qrCv) => {
+        const cv = drawCard(qrCv);
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+        cv.toBlob((blob) => {
+          if (!blob) return;
+          const file = new File([blob], '정한옥_명함.png', { type: 'image/png' });
+          if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], text: '정한옥 · (주)드로니아 디지털 명함' }).catch(() => {});
+          } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = '정한옥_명함.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+            toast('📁 명함을 저장했어요 — 다운로드 폴더를 확인하세요');
+          }
+        }, 'image/png');
+      });
+    });
+
+    document.getElementById('saveVcf').addEventListener('click', () => {
+      const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = '정한옥.vcf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    });
+  </script>
+</body>
+</html>
