@@ -44,11 +44,7 @@
   }
   .info { flex: 1.25; padding: clamp(28px, 5vw, 44px); display: flex; flex-direction: column; }
   .brand { display: flex; align-items: center; gap: 10px; margin-bottom: clamp(18px, 4vw, 28px); }
-  .mono {
-    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
-    background: var(--navy); color: #fff; font-weight: 800; font-size: 1.3rem;
-    display: flex; align-items: center; justify-content: center; letter-spacing: -1px;
-  }
+  .brand-mark { height: 48px; width: auto; flex-shrink: 0; display: block; }
   .brand .org { font-size: clamp(.82rem, 3.4vw, .95rem); font-weight: 800; color: var(--navy); letter-spacing: .2px; }
   .lang-toggle {
     margin-left: auto; align-self: flex-start; flex-shrink: 0;
@@ -91,6 +87,8 @@
   .biz summary::-webkit-details-marker { display: none; }
   .biz ul { list-style: none; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
   .biz li { font-size: clamp(.68rem, 2.9vw, .77rem); font-weight: 700; color: #33406a; background: #eef3fb; border-radius: 999px; padding: 4px 10px; }
+  .footer-banner { margin-top: clamp(20px, 4vw, 28px); padding-top: clamp(16px, 3vw, 20px); border-top: 1px solid var(--line); display: flex; justify-content: center; }
+  .footer-banner img { width: clamp(170px, 62%, 240px); height: auto; opacity: .96; }
 
   .qrside {
     padding: clamp(26px, 5vw, 40px); display: flex; flex-direction: column;
@@ -119,7 +117,7 @@
   <div class="card">
     <div class="info">
       <div class="brand">
-        <div class="mono">정</div>
+        <img class="brand-mark" src="./dronia-mark.png" alt="드로니아 로고">
         <div class="org">(주)드로니아</div>
         <button id="langToggle" class="lang-toggle" type="button" aria-label="언어 전환 / Switch language">EN</button>
       </div>
@@ -158,6 +156,10 @@
           <li>AI·바이브코딩 교육</li>
         </ul>
       </details>
+
+      <div class="footer-banner">
+        <img src="./banner-konadu.png" alt="코나두 — 코딩, 그거 나두 할 수 있어">
+      </div>
     </div>
 
     <div class="qrside">
@@ -259,7 +261,6 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const L = I18N[lang]; if (!L) return;
       curLang = lang;
       document.documentElement.lang = L.htmlLang;
-      document.querySelector('.mono').textContent = L.mono;
       document.querySelector('.org').textContent = L.org;
       document.querySelector('.name').textContent = L.name;
       document.querySelector('.role').textContent = L.role;
@@ -281,6 +282,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     }
 
     const qrBox = document.getElementById('qr');
+
+    // 로고 이미지(같은 폴더) — 저장 이미지(canvas)에 그릴 용도. 화면은 <img>가 따로 표시
+    const markImg = new Image();   markImg.src = './dronia-mark.png';
+    const bannerImg = new Image(); bannerImg.src = './banner-konadu.png';
+    function ensureImg(img) { return new Promise(res => { if (img.complete && img.naturalWidth) return res(); img.onload = () => res(); img.onerror = () => res(); }); }
 
     function qrFromImage() {
       qrBox.innerHTML = '';
@@ -341,24 +347,35 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
     function drawCard(qrCanvas, L) {
       const C = L.canvas;
-      const W = 1080, H = 1500, B = 'bold ';
+      const W = 1080, B = 'bold ';
       const NAVY = '#1f2d59', ACC = '#2e74d6', INK = '#33406a', MUT = '#6b7592';
+      const m = 50, p = 95, lx = m + p, maxW = (W - m - p) - lx, qs = 356;
+      // 하단 배너 크기(코나두)
+      const bannerW = 440;
+      const bannerH = (bannerImg.complete && bannerImg.naturalWidth) ? Math.round(bannerW * bannerImg.naturalHeight / bannerImg.naturalWidth) : 155;
+      // 세로 높이를 내용 흐름에 맞춰 동적 계산(언어별 주소 줄 수 반영) + 배너 공간
+      const firstContactY = m + 116 + 402;   // 이름~구분선 누적(132+64+56+44+50+56)
+      const captionY = firstContactY + C.contacts.length * 52 + C.addrLines.length * 46 + 12 + qs + 52;
+      const bannerTopY = captionY + 56;
+      const H = Math.round(bannerTopY + bannerH + 80);
+
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
       const x = cv.getContext('2d');
       x.fillStyle = '#e8eef7'; x.fillRect(0, 0, W, H);
-      const m = 50; rr(x, m, m, W - 2*m, H - 2*m, 44); x.fillStyle = '#fff'; x.fill();
+      rr(x, m, m, W - 2*m, H - 2*m, 44); x.fillStyle = '#fff'; x.fill();
       x.save(); rr(x, m, m, W - 2*m, H - 2*m, 44); x.clip(); x.fillStyle = NAVY; x.fillRect(m, m, W - 2*m, 12); x.restore();
+      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
 
-      const p = 95, lx = m + p, maxW = (W - m - p) - lx; let y = m + 116;
       // 글자가 칸을 넘으면 폰트를 줄여 맞춤(영문이 길어도 안 넘침)
       function fit(text, px, weight) {
         let s = px;
         do { x.font = (weight || '') + s + 'px sans-serif'; if (x.measureText(text).width <= maxW) break; s -= 2; } while (s > 14);
       }
-      x.beginPath(); x.arc(lx + 40, y, 40, 0, Math.PI * 2); x.fillStyle = NAVY; x.fill();
-      x.fillStyle = '#fff'; x.font = B + '48px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(L.mono, lx + 40, y + 3);
-      x.textAlign = 'left'; x.textBaseline = 'alphabetic';
-      x.fillStyle = NAVY; x.font = B + '34px sans-serif'; x.fillText(L.org, lx + 98, y + 12);
+      let y = m + 116;
+      // 회사 마크(드로니아 엠블럼) + 회사명
+      const mkH = 90, mkW = (markImg.complete && markImg.naturalWidth) ? Math.round(mkH * markImg.naturalWidth / markImg.naturalHeight) : mkH;
+      if (markImg.complete && markImg.naturalWidth) x.drawImage(markImg, lx, y - mkH / 2 - 4, mkW, mkH);
+      x.fillStyle = NAVY; x.font = B + '34px sans-serif'; x.fillText(L.org, lx + mkW + 22, y + 12);
 
       y += 132; x.fillStyle = NAVY; fit(L.name, 96, B);     x.fillText(L.name, lx, y);
       y += 64;  x.fillStyle = INK;  fit(C.role, 42, B);     x.fillText(C.role, lx, y);
@@ -371,16 +388,20 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       C.addrLines.forEach(t => { fit(t, 32, ''); x.fillText(t, lx, y); y += 46; });
       y += 12;
 
-      const qs = 356, qx = (W - qs) / 2;
+      const qx = (W - qs) / 2;
       x.fillStyle = '#fff'; rr(x, qx - 16, y - 16, qs + 32, qs + 32, 20); x.fill(); x.strokeStyle = '#e6ecf5'; x.lineWidth = 2; x.stroke();
       if (qrCanvas) { x.drawImage(qrCanvas, qx, y, qs, qs); }
       else { x.fillStyle = MUT; x.font = '26px sans-serif'; x.textAlign = 'center'; x.fillText(C.qrFail, W / 2, y + qs / 2); x.textAlign = 'left'; }
       y += qs + 52; x.fillStyle = NAVY; x.font = B + '30px sans-serif'; x.textAlign = 'center'; x.fillText(C.qrCap, W / 2, y); x.textAlign = 'left';
+
+      // 하단 배너(코나두) — 가운데, 충분한 여백
+      if (bannerImg.complete && bannerImg.naturalWidth) x.drawImage(bannerImg, (W - bannerW) / 2, bannerTopY, bannerW, bannerH);
       return cv;
     }
 
-    document.getElementById('saveCard').addEventListener('click', () => {
+    document.getElementById('saveCard').addEventListener('click', async () => {
       const L = I18N[curLang];                 // 지금 보이는 언어 그대로 저장
+      await Promise.all([ensureImg(markImg), ensureImg(bannerImg)]);  // 로고가 다 그려진 뒤 캡처
       makeQrCanvas(356, (qrCv) => {
         const cv = drawCard(qrCv, L);
         const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
