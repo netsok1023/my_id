@@ -88,7 +88,7 @@
   .biz ul { list-style: none; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
   .biz li { font-size: clamp(.68rem, 2.9vw, .77rem); font-weight: 700; color: #33406a; background: #eef3fb; border-radius: 999px; padding: 4px 10px; }
   .footer-banner { margin-top: clamp(20px, 4vw, 28px); padding-top: clamp(16px, 3vw, 20px); border-top: 1px solid var(--line); display: flex; justify-content: center; }
-  .footer-banner img { width: clamp(170px, 62%, 240px); height: auto; opacity: .96; }
+  .footer-banner img { width: clamp(58px, 21%, 82px); height: auto; opacity: .96; }
 
   .qrside {
     padding: clamp(26px, 5vw, 40px); display: flex; flex-direction: column;
@@ -351,7 +351,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const NAVY = '#1f2d59', ACC = '#2e74d6', INK = '#33406a', MUT = '#6b7592';
       const m = 50, p = 95, lx = m + p, maxW = (W - m - p) - lx, qs = 356;
       // 하단 배너 크기(코나두)
-      const bannerW = 440;
+      const bannerW = 150;
       const bannerH = (bannerImg.complete && bannerImg.naturalWidth) ? Math.round(bannerW * bannerImg.naturalHeight / bannerImg.naturalWidth) : 155;
       // 세로 높이를 내용 흐름에 맞춰 동적 계산(언어별 주소 줄 수 반영) + 배너 공간
       const firstContactY = m + 116 + 402;   // 이름~구분선 누적(132+64+56+44+50+56)
