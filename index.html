@@ -286,7 +286,6 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     // 로고 이미지(같은 폴더) — 저장 이미지(canvas)에 그릴 용도. 화면은 <img>가 따로 표시
     const markImg = new Image();   markImg.src = './dronia-mark.png';
     const bannerImg = new Image(); bannerImg.src = './banner-konadu.png';
-    function ensureImg(img) { return new Promise(res => { if (img.complete && img.naturalWidth) return res(); img.onload = () => res(); img.onerror = () => res(); }); }
 
     function qrFromImage() {
       qrBox.innerHTML = '';
@@ -339,10 +338,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     }
     function rr(x, px, py, w, h, r) { x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r); x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath(); }
 
-    // 저장용 QR — 같은 파일 안에서 새로 그린 canvas(같은 출처 → 합성 안전, CORS 오염 없음)
-    function makeQrCanvas(size, cb) {
-      try { cb(qrToCanvas(vcard, size)); }
-      catch (e) { cb(qrBox.querySelector('canvas') || null); }
+    // 모바일 여부 + 다운로드/Blob 헬퍼
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+    function dataURLtoBlob(dataURL) {
+      const parts = dataURL.split(','), mime = parts[0].match(/:(.*?);/)[1], bin = atob(parts[1]);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }
+    function downloadBlob(blob, name) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
     }
 
     function drawCard(qrCanvas, L) {
@@ -399,35 +407,36 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       return cv;
     }
 
-    document.getElementById('saveCard').addEventListener('click', async () => {
+    document.getElementById('saveCard').addEventListener('click', () => {
       const L = I18N[curLang];                 // 지금 보이는 언어 그대로 저장
-      await Promise.all([ensureImg(markImg), ensureImg(bannerImg)]);  // 로고가 다 그려진 뒤 캡처
-      makeQrCanvas(356, (qrCv) => {
+      let blob;
+      try {
+        const qrCv = qrToCanvas(vcard, 356);   // 로고는 시작 시 미리 로드됨 → 전부 동기 처리
         const cv = drawCard(qrCv, L);
-        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
-        cv.toBlob((blob) => {
-          if (!blob) return;
-          const file = new File([blob], L.cardFile, { type: 'image/png' });
-          if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: L.shareText }).catch(() => {});
-          } else {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = L.cardFile;
-            document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1500);
-            toast(L.saveToast);
-          }
-        }, 'image/png');
-      });
+        blob = dataURLtoBlob(cv.toDataURL('image/png'));   // 동기 → 폰 '공유' 제스처 유지
+      } catch (e) { return; }
+      const file = new File([blob], L.cardFile, { type: 'image/png' });
+      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // 폰: 공유 시트(사진 저장 / 카톡 전송 등)
+        navigator.share({ files: [file], text: L.shareText })
+          .catch((err) => { if (err && err.name !== 'AbortError') { downloadBlob(blob, L.cardFile); toast(L.saveToast); } });
+      } else {
+        downloadBlob(blob, L.cardFile);        // PC: 다운로드
+        toast(L.saveToast);
+      }
     });
 
     document.getElementById('saveVcf').addEventListener('click', () => {
       const L = I18N[curLang];
       const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });  // vcard = 현재 언어
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = L.vcfFile;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      const file = new File([blob], L.vcfFile, { type: 'text/vcard' });
+      if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // 폰: 공유 시트 → '연락처에 추가'(다운로드 재확인 안 뜸)
+        navigator.share({ files: [file] })
+          .catch((err) => { if (err && err.name !== 'AbortError') downloadBlob(blob, L.vcfFile); });
+      } else {
+        downloadBlob(blob, L.vcfFile);         // PC: .vcf 다운로드
+      }
     });
 
     // 한국어 / English 전환 버튼 + 초기 표시

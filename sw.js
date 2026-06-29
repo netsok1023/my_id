@@ -1,5 +1,5 @@
 // 아주 가벼운 서비스워커 — 명함 기본 화면만 오프라인 캐시 (입문용)
-const CACHE = 'mycard-v4';
+const CACHE = 'mycard-v5';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './dronia-mark.png', './banner-konadu.png'];
 
 self.addEventListener('install', (e) => {
